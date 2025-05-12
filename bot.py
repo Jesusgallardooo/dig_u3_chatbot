@@ -5,150 +5,173 @@ from telegram import Update
 from telegram.ext import CommandHandler, Application, ContextTypes
 import os
 from dotenv import load_dotenv
-# Cargar las variables de entorno
+
+# Load environment variables from .env file
 load_dotenv()
 
-# Inicializar el bot con el token de Telegram
+# Retrieve credentials from environment
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 FIREBASE_CREDENTIALS = os.getenv("FIREBASE_CREDENTIALS")
 
-# Inicialización de Firebase
+# Initialize Firebase with service account credentials
 cred = credentials.Certificate(FIREBASE_CREDENTIALS)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-# Habilitar el registro para debugging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
+# Enable logging for debugging and monitoring
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
 logger = logging.getLogger(__name__)
 
-# Comando /start para iniciar el bot
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.message.from_user
-    logger.info("Usuario %s ha comenzado el bot.", user.first_name)
-    await update.message.reply_text(f"¡Hola {user.first_name}! 👋 Soy tu bot de gestión de inventario. Usa /add para agregar productos y /list para ver el inventario.")
+    """
+    Handle the /start command.
 
-# Comando /add para agregar un producto al inventario
+    Greets the user and provides basic usage instructions.
+    """
+    user = update.message.from_user
+    logger.info("User %s started the bot.", user.first_name)
+    await update.message.reply_text(
+        f"Hi {user.first_name}! 👋 I'm your inventory management bot. "
+        f"Use /add to add products and /list to view the inventory."
+    )
+
 async def add_inventory(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Handle the /add command.
+
+    Adds a product to the inventory, or updates the quantity if it already exists.
+    Usage: /add <name> <quantity> <price>
+    """
     if len(context.args) < 3:
-        await update.message.reply_text("❌ Uso correcto: /add <nombre> <cantidad> <precio>")
+        await update.message.reply_text("❌ Correct usage: /add <name> <quantity> <price>")
         return
-    
+
     name = context.args[0]
     try:
         quantity = int(context.args[1])
         price = float(context.args[2])
     except ValueError:
-        await update.message.reply_text("❌ La cantidad y el precio deben ser números válidos.")
+        await update.message.reply_text("❌ Quantity and price must be valid numbers.")
         return
-    
+
     try:
-        # Verificar si el producto ya existe en Firestore
+        # Check if the product already exists
         existing_products = db.collection('inventario').where('name', '==', name).stream()
         existing_products_list = list(existing_products)
-        
+
         if existing_products_list:
-            # Si el producto ya existe, verificar si el precio es diferente
+            # Product exists: check if price matches
             existing_product = existing_products_list[0].to_dict()
             existing_price = existing_product['price']
-            
+
             if existing_price != price:
                 await update.message.reply_text(
-                    f"❌ El producto '{name}' ya existe con un precio diferente (${existing_price}).\n"
-                    f"No se puede agregar con un nuevo precio (${price})."
+                    f"❌ The product '{name}' already exists with a different price (${existing_price}).\n"
+                    f"You cannot add it with a new price (${price})."
                 )
-                return  # Salir de la función sin agregar el producto
-            
-            # Si el precio es el mismo, actualizar la cantidad
+                return
+
+            # Price matches: update quantity
             product_ref = existing_products_list[0].reference
             current_quantity = existing_product['quantity']
             new_quantity = current_quantity + quantity
-            
+
             product_ref.update({'quantity': new_quantity})
             await update.message.reply_text(
-                f"🔄 Producto '{name}' actualizado.\n"
-                f"📦 Nueva cantidad: {new_quantity}\n"
-                f"💰 Precio: ${price}"
+                f"🔄 Product '{name}' updated.\n"
+                f"📦 New quantity: {new_quantity}\n"
+                f"💰 Price: ${price}"
             )
         else:
-            # Si no existe, agregar el producto a Firestore
+            # Product does not exist: add new document
             db.collection('inventario').add({
                 'name': name,
                 'quantity': quantity,
                 'price': price
             })
             await update.message.reply_text(
-                f"✅ Producto '{name}' agregado al inventario.\n"
-                f"📦 Cantidad: {quantity}\n"
-                f"💰 Precio: ${price}"
+                f"✅ Product '{name}' added to inventory.\n"
+                f"📦 Quantity: {quantity}\n"
+                f"💰 Price: ${price}"
             )
-    
+
     except Exception as e:
-        await update.message.reply_text(f"❌ Hubo un error al agregar el producto: {e}")
+        await update.message.reply_text(f"❌ Error adding product: {e}")
 
-
-# Comando /list para listar todos los productos del inventario
 async def list_inventory(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Handle the /list command.
+
+    Retrieves and displays all products in the inventory.
+    """
     try:
-        # Recuperamos todos los productos de la colección 'inventario'
         products = db.collection('inventario').stream()
         products_list = list(products)
 
-        # Si no se encuentran productos
         if not products_list:
-            await update.message.reply_text("📭 El inventario está vacío.")
+            await update.message.reply_text("📭 Inventory is empty.")
             return
 
-        # Mostrar el inventario con un formato visual
-        inventory_list = "📋 **Inventario:**\n\n"
+        # Build a readable inventory list
+        inventory_list = "📋 **Inventory:**\n\n"
         for product in products_list:
             product_data = product.to_dict()
             inventory_list += (
-                f"📦 **Producto:** {product_data['name']}\n"
-                f"🔢 **Cantidad:** {product_data['quantity']}\n"
-                f"💰 **Precio:** ${product_data['price']}\n"
+                f"📦 **Product:** {product_data['name']}\n"
+                f"🔢 **Quantity:** {product_data['quantity']}\n"
+                f"💰 **Price:** ${product_data['price']}\n"
                 "------------------------\n"
             )
 
-        # Mostrar el inventario completo
         await update.message.reply_text(inventory_list)
 
     except Exception as e:
-        await update.message.reply_text(f"❌ Hubo un error al listar los productos: {e}")
+        await update.message.reply_text(f"❌ Error listing products: {e}")
 
-
-# Comando /delete para eliminar un producto del inventario
 async def delete_inventory(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Handle the /delete command.
+
+    Deletes a product from the inventory by its name.
+    Usage: /delete <product_name>
+    """
     if len(context.args) < 1:
-        await update.message.reply_text("❌ Uso correcto: /delete <nombre_producto>")
+        await update.message.reply_text("❌ Correct usage: /delete <product_name>")
         return
 
     name = context.args[0]
-    
-    # Buscar el producto en Firestore
-    products = db.collection('inventario').where('name', '==', name).stream()
-    deleted = False
-    
-    for product in products:
-        product.reference.delete()
-        deleted = True
-    
-    if deleted:
-        await update.message.reply_text(f"✅ Producto '{name}' eliminado del inventario.")
-    else:
-        await update.message.reply_text(f"❌ Producto '{name}' no encontrado.")
 
-# Función principal para ejecutar el bot
+    try:
+        products = db.collection('inventario').where('name', '==', name).stream()
+        deleted = False
+
+        for product in products:
+            product.reference.delete()
+            deleted = True
+
+        if deleted:
+            await update.message.reply_text(f"✅ Product '{name}' deleted from inventory.")
+        else:
+            await update.message.reply_text(f"❌ Product '{name}' not found.")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Error deleting product: {e}")
+
 def main():
+    """
+    Main entry point to initialize and run the Telegram bot.
+    """
     application = Application.builder().token(TELEGRAM_TOKEN).build()
 
-    # Registrar los comandos
+    # Register command handlers
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("add", add_inventory))
     application.add_handler(CommandHandler("list", list_inventory))
     application.add_handler(CommandHandler("delete", delete_inventory))
 
-    # Iniciar el bot
+    # Run the bot
     application.run_polling()
 
 if __name__ == '__main__':
