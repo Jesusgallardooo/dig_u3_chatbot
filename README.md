@@ -131,9 +131,11 @@ If you try to use an incorrect prompt with the /add, the result is going to be:
 Returns a formatted list of all products.
 
 if there's some articles added, the result of this prompt is going to be: 
+
 ![](/assets/listProducto.png)
 
 but, if the inventory is empty, the result is going to be :
+
 ![](/assets/listVacio.png)
 
 ### /delete <product> (Admin only)
