@@ -2,19 +2,19 @@
 
 A lightweight Telegram bot for managing store inventory using Firebase as a backend. Easily add, list, and delete products directly through Telegram commands.
 
-## 🚀 Motivation
+## Motivation
 
 This project was created to simplify inventory management for small shops and individuals through a user-friendly Telegram interface. The goal is to provide a minimal, accessible tool that does not require any specialized hardware or software beyond a smartphone.
 
-## 🧠 Features
+## Features
 
-- 📦 Add new products with name, quantity, and price.
-- 📄 List all products in the inventory.
-- 🗑️ Delete products (admin-only).
-- 🔒 Admin access control (by Telegram user ID).
-- ☁️ Persistent storage using Firebase Realtime Database.
+- Add new products with name, quantity, and price.
+- List all products in the inventory.
+- Delete products (admin-only).
+- Admin access control (by Telegram user ID).
+- Persistent storage using Firebase Realtime Database.
 
-## 🔧 Tech Stack
+## Tech Stack
 
 - **Python 3**
 - **Python Telegram Bot** (telegram.ext)
@@ -22,12 +22,12 @@ This project was created to simplify inventory management for small shops and in
 - **Google Cloud SDK**
 - **Docker (optional for deployment)**
 
-## 🖥️ Demo
+## Demo
 
 In this type of application, creating an online demo is practically impossible, so to demonstrate how it works, I'll attach screenshots of how it works later.
 
 
-## 📦 Installation
+## Installation
 
 ### 1. Clone the Repository
 
@@ -65,7 +65,7 @@ ADMIN_ID = your_telegram_id
 python bot.py
 ```
 
-## ☁️ Deployment
+## Deployment
 
 Although the bot runs on Telegram, you need to host the backend (this Python bot) on a server so it can stay online and listen for incoming messages. Here are a few options:
 
@@ -74,7 +74,7 @@ Although the bot runs on Telegram, you need to host the backend (this Python bot
 ```bash
 python bot.py
 ```
-***⚠️ The bot will stop working when you shut down your computer. Use this only for testing.***
+*** The bot will stop working when you shut down your computer. Use this only for testing.***
 
 ### Option 2: Deploy on Heroku (Recommended for Beginners)
 
@@ -99,7 +99,7 @@ docker run -d telegram-bot
 
 You can also use Google Cloud Functions or AWS Lambda + API Gateway with webhooks, but this requires modifying the bot to use webhook mode instead of polling.
 
-## 🧪 Usage
+## Usage
 
 
 ### /start
@@ -148,7 +148,7 @@ Deletes a product from the database.
 
 ![](/assets/delete.png)
 
-## 📂 Folder Structure
+## Folder Structure
 
 ```
 ├── bot.py                  # Main bot logic
@@ -158,10 +158,10 @@ Deletes a product from the database.
 └── README.md
 ```
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please check the [CONTRIBUTING.md](/CONTRIBUTING.md) file for guidelines and future ideas.
 
-## 🌐 Author
+## Author
 
 Developed by Jesús Gallardo
